@@ -207,6 +207,28 @@ namespace AW::Hooks
 			logger::debug("idle-stop fix armed");
 		}
 
+		[[nodiscard]] bool PlayAction(
+			RE::Actor* a_actor,
+			RE::BGSAction* a_action,
+			RE::TESObjectREFR* a_target,
+			bool a_armIdleStopFix)
+		{
+			const auto wasArmed = g_idleStopFixArmed;
+			const auto previousExpiry = g_idleStopFixExpiry;
+
+			if (a_armIdleStopFix) {
+				ArmIdleStopFix();
+			}
+
+			const bool played = Game::PlayAction(a_actor, a_action, a_target);
+			if (!played && a_armIdleStopFix) {
+				g_idleStopFixArmed = wasArmed;
+				g_idleStopFixExpiry = previousExpiry;
+			}
+
+			return played;
+		}
+
 		void ArmAnimation()
 		{
 			if (g_trace) {
@@ -493,14 +515,13 @@ namespace AW::Hooks
 			g_itemFromGround = false;
 
 			auto* player = RE::PlayerCharacter::GetSingleton();
-			if (player && a_target && EnsureFormsResolved() && g_actionActivate) {
-				if (player->weaponState != RE::WEAPON_STATE::kSheathed) {
-					ArmIdleStopFix();
-				}
-
-				if (Game::PlayAction(player, g_actionActivate, a_target)) {
-					g_itemFromGround = true;
-				}
+			if (player && a_target && EnsureFormsResolved() && g_actionActivate &&
+				PlayAction(
+					player,
+					g_actionActivate,
+					a_target,
+					player->weaponState != RE::WEAPON_STATE::kSheathed)) {
+				g_itemFromGround = true;
 			}
 			logger::debug("ActivateRef animation armed fromGround={}", g_itemFromGround);
 
@@ -535,11 +556,11 @@ namespace AW::Hooks
 
 			g_playerTarget->data.objectReference = a_item;
 
-			if (player->weaponState != RE::WEAPON_STATE::kSheathed) {
-				ArmIdleStopFix();
-			}
-
-			const bool played = Game::PlayAction(player, g_actionActivate, g_playerTarget);
+			const bool played = PlayAction(
+				player,
+				g_actionActivate,
+				g_playerTarget,
+				player->weaponState != RE::WEAPON_STATE::kSheathed);
 			if (played) {
 				ArmAnimation();
 			}
@@ -695,8 +716,7 @@ namespace AW::Hooks
 			auto* player = RE::PlayerCharacter::GetSingleton();
 
 			if (player && player->GetFullyLoaded3D() && EnsureFormsResolved() && g_actionFlashlight) {
-				ArmIdleStopFix();
-				static_cast<void>(Game::PlayAction(player, g_actionFlashlight, player));
+				static_cast<void>(PlayAction(player, g_actionFlashlight, player, true));
 			}
 
 			g_origSetInputDeviceLightState(a_manager, a_state, a_on);

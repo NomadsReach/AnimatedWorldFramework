@@ -91,19 +91,7 @@ namespace AW::Hooks
 		using FnAddAcquiredEvent = void(__fastcall*)(RE::PlayerCharacter*, RE::TESBoundObject*, RE::TESForm*, RE::TESObjectREFR*, std::int32_t);
 		using FnActivateRef = bool(__fastcall*)(RE::TESObjectREFR*, RE::TESObjectREFR*, RE::TESBoundObject*, int, bool, bool, bool);
 		using FnHandlePlayerItem = void(__fastcall*)(RE::TESBoundObject*, RE::ExtraDataList*, std::uint32_t);
-		using FnUseObjectOG = bool(__fastcall*)(
-			RE::ActorEquipManager*,
-			RE::Actor*,
-			const RE::BGSObjectInstance&,
-			std::uint32_t,
-			std::uint32_t,
-			const RE::BGSEquipSlot*,
-			bool,
-			bool,
-			bool,
-			bool,
-			bool);
-		using FnUseObjectEntry = bool(__fastcall*)(
+		using FnUseObject = bool(__fastcall*)(
 			RE::ActorEquipManager*,
 			RE::Actor*,
 			const RE::BGSObjectInstance*,
@@ -118,8 +106,7 @@ namespace AW::Hooks
 		FnAddAcquiredEvent g_origAddAcquiredEvent{ nullptr };
 		FnActivateRef g_origActivateRef{ nullptr };
 		FnHandlePlayerItem g_origHandlePlayerItem{ nullptr };
-		FnUseObjectOG g_origUseObjectOG{ nullptr };
-		FnUseObjectEntry g_origUseObjectEntry{ nullptr };
+		FnUseObject g_origUseObject{ nullptr };
 		FnSetInputDeviceLightState g_origSetInputDeviceLightState{ nullptr };
 		FnProcessGraphEvent g_origProcessGraphEvent{ nullptr };
 
@@ -656,47 +643,14 @@ namespace AW::Hooks
 			}
 		}
 
-		bool __fastcall HookedUseObjectOG(
-			RE::ActorEquipManager* a_this,
-			RE::Actor* a_actor,
-			const RE::BGSObjectInstance& a_object,
-			std::uint32_t a_stackID,
-			std::uint32_t a_number,
-			const RE::BGSEquipSlot* a_slot,
-			bool a_queueEquip,
-			bool a_forceEquip,
-			bool a_playSounds,
-			bool a_applyNow,
-			bool a_locked)
-		{
-			logger::debug(
-				"UseObject OG actor={} object={}",
-				a_actor ? a_actor->formID : 0,
-				a_object.object ? a_object.object->formID : 0);
-
-			AnimateUseObject(a_actor, static_cast<RE::TESBoundObject*>(a_object.object));
-			return g_origUseObjectOG(
-				a_this,
-				a_actor,
-				a_object,
-				a_stackID,
-				a_number,
-				a_slot,
-				a_queueEquip,
-				a_forceEquip,
-				a_playSounds,
-				a_applyNow,
-				a_locked);
-		}
-
-		bool __fastcall HookedUseObjectEntry(
+		bool __fastcall HookedUseObject(
 			RE::ActorEquipManager* a_this,
 			RE::Actor* a_actor,
 			const RE::BGSObjectInstance* a_object,
 			void* a_params)
 		{
 			logger::debug(
-				"UseObject entry actor={} object={} params={}",
+				"UseObject actor={} object={} params={}",
 				a_actor ? a_actor->formID : 0,
 				a_object && a_object->object ? a_object->object->formID : 0,
 				a_params != nullptr);
@@ -704,7 +658,7 @@ namespace AW::Hooks
 			AnimateUseObject(
 				a_actor,
 				a_object ? static_cast<RE::TESBoundObject*>(a_object->object) : nullptr);
-			return g_origUseObjectEntry(a_this, a_actor, a_object, a_params);
+			return g_origUseObject(a_this, a_actor, a_object, a_params);
 		}
 
 		void __fastcall HookedSetInputDeviceLightState(
@@ -810,12 +764,9 @@ namespace AW::Hooks
 
 		if (REL::runtime_family(REL::Module::get().version()) == REL::RuntimeFamily::kOG) {
 			static_cast<void>(InstallCall(
-				Addresses::Site::kUseObject, g_origUseObjectOG, &HookedUseObjectOG));
+				Addresses::Site::kUseObject, g_origUseObject, &HookedUseObject));
 		} else if (Addresses::IsVerifiedUseObjectRuntime()) {
-			if (!InstallEntry(
-				Addresses::Site::kUseObject,
-				g_origUseObjectEntry,
-				&HookedUseObjectEntry)) {
+			if (!InstallEntry(Addresses::Site::kUseObject, g_origUseObject, &HookedUseObject)) {
 				logger::warn("UseObject entry hook unavailable - feature remains disabled");
 			}
 		} else {

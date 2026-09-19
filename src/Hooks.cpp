@@ -617,8 +617,8 @@ namespace AW::Hooks
 						const bool enabled =
 							g_globalPipboyEquipAnims && g_globalPipboyEquipAnims->value > 0.0f;
 
-						if (enabled && Game::CanReopenPipboy()) {
-							static_cast<void>(Game::PlayAction(player, g_actionEquipAnim, g_playerTarget));
+						if (enabled && Game::CanReopenPipboy() &&
+							Game::PlayAction(player, g_actionEquipAnim, g_playerTarget)) {
 							g_reopenPipboy = true;
 						}
 					} else {

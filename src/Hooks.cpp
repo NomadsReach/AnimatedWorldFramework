@@ -214,6 +214,8 @@ namespace AW::Hooks
 			}
 
 			const auto now = Clock::now();
+			g_animationSoon = false;
+			g_matSwapPending = false;
 			g_animationDeadline = now + ANIMATION_SETTLE_DELAY;
 			g_animationExpiry = now + ANIMATION_PENDING_TIMEOUT;
 			g_animationPending = true;
@@ -538,7 +540,9 @@ namespace AW::Hooks
 			}
 
 			const bool played = Game::PlayAction(player, g_actionActivate, g_playerTarget);
-			ArmAnimation();
+			if (played) {
+				ArmAnimation();
+			}
 
 			if (g_trace) {
 				logger::info(

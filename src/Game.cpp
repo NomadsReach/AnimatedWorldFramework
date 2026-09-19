@@ -151,11 +151,12 @@ namespace AW::Game
 	{
 		if (!g_playAction || !a_actor || !a_action || !a_target || !a_actor->GetFullyLoaded3D()) {
 			logger::debug(
-				"PlayAction skipped actor={} action={} target={} bound={}",
+				"PlayAction skipped actor={} action={} target={} bound={} loaded3D={}",
 				a_actor != nullptr,
 				a_action != nullptr,
 				a_target != nullptr,
-				g_playAction != nullptr);
+				g_playAction != nullptr,
+				a_actor && a_actor->GetFullyLoaded3D());
 			return false;
 		}
 

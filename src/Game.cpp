@@ -149,7 +149,7 @@ namespace AW::Game
 
 	bool PlayAction(RE::Actor* a_actor, RE::BGSAction* a_action, RE::TESObjectREFR* a_target)
 	{
-		if (!g_playAction || !a_actor || !a_action || !a_target) {
+		if (!g_playAction || !a_actor || !a_action || !a_target || !a_actor->GetFullyLoaded3D()) {
 			logger::debug(
 				"PlayAction skipped actor={} action={} target={} bound={}",
 				a_actor != nullptr,
